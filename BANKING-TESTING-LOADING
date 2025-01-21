@@ -379,26 +379,35 @@ SELECT * FROM TABLE(SYSTEM$STREAM_HAS_DATA('BANKING.CUSTOMER360_SILVER.CUSTOMERS
 
 
 
+TRUNCATE TABLE BANKING.CUSTOMER360_BRONZE.ACCOUNTS;
+TRUNCATE TABLE BANKING.CUSTOMER360_BRONZE.CUSTOMERS;
+TRUNCATE TABLE BANKING.CUSTOMER360_BRONZE.TRANSACTIONS;
+TRUNCATE TABLE BANKING.CUSTOMER360_SILVER.ACCOUNTS_PROCESSED;
+TRUNCATE TABLE BANKING.CUSTOMER360_SILVER.TRANSACTIONS_PROCESSED;
+TRUNCATE TABLE BANKING.CUSTOMER360_SILVER.CUSTOMERS_PROCESSED;
+TRUNCATE TABLE BANKING.CUSTOMER360_GOLD.ACCOUNT_AGGREGATED;
+TRUNCATE TABLE BANKING.CUSTOMER360_GOLD.CUSTOMER_AGGREGATED;
+TRUNCATE TABLE BANKING.CUSTOMER360_GOLD.TRANSACTIONS_AGGREGATED;
 
-INSERT INTO BANKING.CUSTOMER360_BRONZE.CUSTOMERS 
-(CustomerKey, CustomerID, Name, DateOfBirth, Gender, MaritalStatus, Email, PhoneNumber, Country, Region, State, City, Pincode)
-VALUES
-(1, 'IB-0001', 'Eric Johnson', '1944-11-12', 'Male', 'Single', 'johnson@yahoo.com', '(631) 73-4969', 'United States', 'West', 'Montana', 'East Lisaberg', 15022),
-(2, 'IB-0002', 'Candice Torres', '1987-11-23', 'Female', 'Single', 'candice@gmail.com', '(212) 290-8145', 'United States', 'Midwest', 'Minnesota', 'North Chad', 66594),
-(3, 'IB-0003', 'Edward Barnes', '1973-08-09', 'Male', 'Single', 'barnes@yahoo.com', '(516) 248-7566', 'United States', 'Midwest', 'Kansas', 'Port Gary', 78803),
-(4, 'IB-0004', 'Jessica Gamble', '1977-10-26', 'Female', 'Single', 'jessica@gmail.com', '(646) 156-4999', 'United States', 'South', 'Utah', 'Gonzalezstad', 83415),
-(5, 'IB-0005', 'Linda Waters', '1953-06-14', 'Female', 'Single', 'waters@gmail.com', '(914) 505-8561', 'United States', 'West', 'Rhode Island', 'Port Larry', 50938),
-(6, 'IB-0006', 'Danielle Rosario', '1963-12-03', 'Female', 'Single', 'danielle@yahoo.com', '(914) 385-3456', 'United States', 'South', 'Alaska', 'Lucasfort', 40202),
-(7, 'IB-0007', 'Carolyn Mitchell', '1981-02-11', 'Female', 'Married', 'mitchell@gmail.com', '(718) 142-2646', 'United States', 'Midwest', 'Ohio', 'Brandimouth', 76867),
-(8, 'IB-0008', 'Susan Rowe', '1962-09-05', 'Female', 'Married', 'susan@yahoo.com', '(718) 781-8884', 'United States', 'South', 'Hawaii', 'Lake Nancy', 32438),
-(9, 'IB-0009', 'Paul Schaefer', '1960-08-03', 'Male', 'Single', 'schaefer@yahoo.com', '(585) 254-8372', 'United States', 'West', 'Arkansas', 'Port Mike', 46007),
-(10, 'IB-0010', 'Robyn Tanner', '1980-07-05', 'Female', 'Single', 'robyn@gmail.com', '(585) 345-2425', 'United States', 'South', 'Missouri', 'Stevenmouth', 78737),
-(11, 'IB-0011', 'Shannon Cruz', '1968-07-16', 'Female', 'Married', 'cruz@gmail.com', '(914) 584-4883', 'United States', 'Northeast', 'California', 'Lisaborough', 18198),
-(12, 'IB-0012', 'Angela Smith', '1968-01-05', 'Female', 'Married', 'angela@gmail.com', '(516) 562-3242', 'United States', 'West', 'Oregon', 'Monicamouth', 35695),
-(13, 'IB-0013', 'Rodney Holmes', '1986-04-28', 'Male', 'Single', 'holmes@gmail.com', '(201) 860-7030', 'United States', 'Midwest', 'Alabama', 'Lake Emilymouth', 57323),
-(14, 'IB-0014', 'Kim Campbell', '1993-05-05', 'Female', 'Married', 'campbell@yahoo.com', '(845) 908-6002', 'United States', 'Northeast', 'Arkansas', 'Lake Amber', 66811),
-(15, 'IB-0015', 'Derek Knox', '1960-07-14', 'Male', 'Single', 'derek@gmail.com', '(914) 82-3665', 'United States', 'Midwest', 'South Carolina', 'Port Jacobfurt', 87876),
-(16, 'IB-0016', 'Karen Fisher', '1986-10-04', 'Female', 'Divorced', 'karen@gmail.com', '(516) 353-6152', 'United States', 'West', 'Missouri', 'North Andrea', 75758),
-(17, 'IB-0017', 'Audrey Arnold', '1996-11-13', 'Female', 'Single', 'arnold@yahoo.com', '(646) 494-4311', 'United States', 'West', 'Idaho', 'Daviston', 58805),
-(18, 'IB-0018', 'Cynthia Horton', '1947-05-29', 'Female', 'Single', 'horton@yahoo.com', '(201) 625-5463', 'United States', 'Midwest', 'New York', 'Lake Blakemouth', 73732);
 
+
+
+SELECT count(*) FROM BANKING.CUSTOMER360_BRONZE.ACCOUNTS
+SELECT count(*) FROM BANKING.CUSTOMER360_BRONZE.CUSTOMERS
+SELECT count(*) FROM BANKING.CUSTOMER360_BRONZE.TRANSACTIONS;
+SELECT count(*) FROM BANKING.CUSTOMER360_SILVER.ACCOUNTS_PROCESSED;
+SELECT count(*) FROM BANKING.CUSTOMER360_SILVER.TRANSACTIONS_PROCESSED;
+SELECT count(*) FROM BANKING.CUSTOMER360_SILVER.CUSTOMERS_PROCESSED;
+SELECT count(*) FROM BANKING.CUSTOMER360_GOLD.ACCOUNT_AGGREGATED;
+SELECT count(*) FROM BANKING.CUSTOMER360_GOLD.CUSTOMER_AGGREGATED;
+SELECT count(*) FROM BANKING.CUSTOMER360_GOLD.TRANSACTIONS_AGGREGATED;
+
+SELECT * FROM BANKING.CUSTOMER360_BRONZE.ACCOUNTS limit 10
+SELECT * FROM BANKING.CUSTOMER360_BRONZE.CUSTOMERS limit 10
+SELECT * FROM BANKING.CUSTOMER360_BRONZE.TRANSACTIONS limit 10;
+SELECT * FROM BANKING.CUSTOMER360_SILVER.ACCOUNTS_PROCESSED limit 10;
+SELECT * FROM BANKING.CUSTOMER360_SILVER.TRANSACTIONS_PROCESSED limit 10;
+SELECT * FROM BANKING.CUSTOMER360_SILVER.CUSTOMERS_PROCESSED limit 10;
+SELECT * FROM BANKING.CUSTOMER360_GOLD.ACCOUNT_AGGREGATED limit 10;
+SELECT * FROM BANKING.CUSTOMER360_GOLD.CUSTOMER_AGGREGATED limit 10;
+SELECT * FROM BANKING.CUSTOMER360_GOLD.TRANSACTIONS_AGGREGATED limit 10;
