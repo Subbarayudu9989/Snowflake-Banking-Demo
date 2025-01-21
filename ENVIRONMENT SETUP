@@ -1,0 +1,511 @@
+create database banking;
+
+
+  CREATE OR REPLACE STORAGE INTEGRATION azure_integration
+  TYPE = EXTERNAL_STAGE
+  STORAGE_PROVIDER = 'AZURE'
+  ENABLED = TRUE
+  AZURE_TENANT_ID = '1470fe0c-7f71-4cb2-99a3-6ebb3bb9df1e'
+  STORAGE_ALLOWED_LOCATIONS = ('azure://bomdemo.blob.core.windows.net/customerstage/')
+  -- [ STORAGE_BLOCKED_LOCATIONS = ('azure://<account>.blob.core.windows.net/<container>/<path>/', 'azure://<account>.blob.core.windows.net/<container>/<path>/') ]
+
+
+
+
+
+  -- SnowPipe - Azure  setup
+
+CREATE  NOTIFICATION INTEGRATION BANKING_SNOWPIPE
+ENABLED =TRUE
+TYPE=QUEUE
+NOTIFICATION_PROVIDER=AZURE_STORAGE_QUEUE
+AZURE_STORAGE_QUEUE_PRIMARY_URI='https://bomdemo.queue.core.windows.net/customerdemoqueue'
+AZURE_TENANT_ID='1470fe0c-7f71-4cb2-99a3-6ebb3bb9df1e';
+
+SHOW INTEGRATIONS;
+
+desc NOTIFICATION INTEGRATION BANKING_SNOWPIPE;
+
+
+ALTER STORAGE INTEGRATION azure_integration
+SET STORAGE_ALLOWED_LOCATIONS = ('https://bomdemo.queue.core.windows.net/customerdemoqueue');
+
+
+CREATE OR REPLACE STAGE BANKING_STAGE_RAW
+url = 'azure://bomdemo.blob.core.windows.net/customerstage/'
+credentials = (azure_sas_token=
+'?sp=racwdl&st=2025-01-12T17:44:55Z&se=2025-04-30T01:44:55Z&spr=https&sv=2022-11-02&sr=c&sig=m8lLAMU9PRacdBnqSRpPz%2Fu6oQ12WyEbpDh0kz8%2Fn7Y%3D'
+);
+
+
+show stages;
+
+ls @BANKING_STAGE_RAW;
+
+
+
+
+
+
+
+SELECT SYSTEM$PIPE_STATUS('BANK_TRANSACTIONS_PIPE');
+ALTER PIPE BANK_TRANSACTIONS_PIPE REFRESH;
+
+
+ALTER STORAGE INTEGRATION azure_integration
+SET STORAGE_ALLOWED_LOCATIONS = ('azure://bomdemo.queue.core.windows.net/customerdemoqueue');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE SCHEMA IF NOT EXISTS PIPES_TESTING
+
+
+ALTER PIPE BANK_CUSTOMERS_PIPE REFRESH
+
+SELECT* FROM BANKING.CUSTOMER360_BRONZE.ACCOUNTS
+
+SELECT * FROM TABLE(BANKING.INFORMATION_SCHEMA.COPY_HISTORY(TABLE_NAME=>'CUSTOMER360_BRONZE.TRANSACTIONS',START_TIME=>DATEADD(HOURS,-1,CURRENT_TIMESTAMP())))
+
+CREATE OR REPLACE PIPE "BANK_ACCOUNTS_PIPE"
+  AUTO_INGEST = TRUE
+  INTEGRATION = 'BANKING_SNOWPIPE'
+AS
+COPY INTO BANKING.CUSTOMER360_BRONZE.ACCOUNTS
+  (ACCOUNT_KEY,
+   CUSTOMERID,
+   PRODUCT_ID,
+   ACCOUNT_TYPE,
+   ACCOUNTNUMBER,
+   CUSTOMERNAME,
+   AVERAGE_MONTHLY_BALANCE,
+   CURRENT_BALANCE,
+   ACCOUNT_OPEN_DATE,
+   ACCOUNT_CLOSE_DATE,
+   ACCOUNT_STATUS,
+   PRINCIPAL_AMOUNT,
+   MONTHLY_PAYMENT,
+   CARD_LIMIT,
+   CARD_NUMBER,
+   TENURE,
+   AC_TYPE)
+FROM (
+  SELECT 
+    $1 AS ACCOUNT_KEY,
+    $2 AS CUSTOMERID,
+    $3 AS PRODUCT_ID,
+    $4 AS ACCOUNT_TYPE,
+    $5 AS ACCOUNTNUMBER,
+    $6 AS CUSTOMERNAME,
+    $7 AS AVERAGE_MONTHLY_BALANCE,
+    $8 AS CURRENT_BALANCE,
+    TO_DATE($9, 'MM/DD/YYYY') AS ACCOUNT_OPEN_DATE,
+    TO_DATE($10, 'MM/DD/YYYY') AS ACCOUNT_CLOSE_DATE,
+    $11 AS ACCOUNT_STATUS,
+    $12 AS PRINCIPAL_AMOUNT,
+    $13 AS MONTHLY_PAYMENT,
+    $14 AS CARD_LIMIT,
+    $15 AS CARD_NUMBER,
+    $16 AS TENURE,
+    $17 AS AC_TYPE
+  FROM @BANKING.PUBLIC.BANKING_STAGE_RAW
+)
+FILE_FORMAT = (TYPE = 'CSV');
+
+DESC PIPE BANK_TRANSACTIONS_PIPE
+
+CREATE OR REPLACE PIPE "BANK_TRANSACTIONS_PIPE"
+  AUTO_INGEST = TRUE
+  INTEGRATION = 'BANKING_SNOWPIPE'
+AS
+COPY INTO BANKING.CUSTOMER360_BRONZE.TRANSACTIONS
+  (TRANSACTION_ID,
+   PRODUCT_ID,
+   ACCOUNT_KEY,
+   PAYMENT_ID,
+   PAYMENT_TYPE,
+   PAYMENT_APP,
+   TRANSACTION_DATE,
+   TRANSACTION_AMT,
+   TRANSACTION_TYPE,
+   BALANCE,
+   CUSTOMERID)
+FROM (
+  SELECT 
+    $1 AS TRANSACTION_ID,
+    $2 AS PRODUCT_ID,
+    $3 AS ACCOUNT_KEY,
+    $4 AS PAYMENT_ID,
+    $5 AS PAYMENT_TYPE,
+    $6 AS PAYMENT_APP,
+    TO_DATE($7, 'MM/DD/YYYY') AS TRANSACTION_DATE,
+    $8 AS TRANSACTION_AMT,
+    $9 AS TRANSACTION_TYPE,
+    $10 AS BALANCE,
+    $11 AS CUSTOMERID
+  FROM @BANKING.PUBLIC.BANKING_STAGE_RAW
+)
+FILE_FORMAT = (TYPE = 'CSV');
+
+
+ALTER PIPE BANKING.PIPES_TESTING.ACCOUNTS_PIPE REFRESH
+
+SELECT * FROM BANKING.CUSTOMER360_BRONZE.TRANSACTIONS
+
+
+
+SELECT * FROM TABLE(BANKING.INFORMATION_SCHEMA.COPY_HISTORY(TABLE_NAME=>'CUSTOMER360_BRONZE.TRANSACTIONS',START_TIME=>DATEADD(HOURS,-1,CURRENT_TIMESTAMP())))
+
+
+CREATE OR REPLACE PIPE "BANK_CUSTOMERS_PIPE"
+  AUTO_INGEST = TRUE
+  INTEGRATION = 'BANKING_SNOWPIPE'
+AS
+COPY INTO BANKING.CUSTOMER360_BRONZE.CUSTOMERS
+  (CustomerKey,
+   CustomerID,
+   Name,
+   DateOfBirth,
+   Gender,
+   MaritalStatus,
+   Email,
+   PhoneNumber,
+   Country,
+   Region,
+   State,
+   City,
+   Pincode)
+FROM (
+  SELECT 
+    $1 AS CustomerKey,
+    $2 AS CustomerID,
+    $3 AS Name,
+    TO_DATE(NULLIF($4, ''), 'MM/DD/YYYY') AS DateOfBirth,
+    $5 AS Gender,
+    $6 AS MaritalStatus,
+    $7 AS Email,
+    $8 AS PhoneNumber,
+    $9 AS Country,
+    $10 AS Region,
+    $11 AS State,
+    $12 AS City,
+    $13 AS Pincode
+  FROM @BANKING.PUBLIC.BANKING_STAGE_RAW
+)
+FILE_FORMAT = (TYPE = 'CSV');
+
+SELECT * FROM BANKING.CUSTOMER360_BRONZE.CUSTOMERS
+LS @BANKING_STAGE_RAW
+
+
+CREATE OR REPLACE SCHEMA CUSTOMER360_SILVER
+
+
+
+
+
+-- CREATE TRANSACTIONS TABLE (SILVER)
+CREATE TABLE IF NOT EXISTS CUSTOMER360_SILVER.TRANSACTIONS_PROCESSED (
+    Transaction_id STRING,
+    Product_id STRING,
+    Account_key STRING,
+    Payment_id STRING,
+    Payment_type STRING,
+    Payment_App STRING,
+    Transaction_date DATE,
+    Transaction_amt NUMBER,
+    Transaction_type STRING,
+    Balance NUMBER,
+    CustomerID STRING
+);
+
+
+
+-- Create Accounts Table (SILVER Layer)
+CREATE TABLE IF NOT EXISTS CUSTOMER360_SILVER.ACCOUNTS_PROCESSED (
+    Account_Key STRING,
+    CustomerID STRING,
+    Product_id STRING,
+    Account_type STRING,
+    AccountNumber STRING,
+    CustomerName STRING,
+    Average_monthly_balance NUMBER,
+    Current_balance NUMBER,
+    Account_open_date DATE,
+    Account_close_date DATE,
+    Account_status STRING,
+    Principal_amount NUMBER,
+    Monthly_payment NUMBER,
+    Card_limit NUMBER,
+    Card_number STRING,
+    Tenure NUMBER,
+    AC_TYPE STRING
+);
+
+-- Create Customers Table (SILVER Layer)
+CREATE TABLE IF NOT EXISTS CUSTOMER360_SILVER.CUSTOMERS_PROCESSED (
+    CustomerKey STRING,
+    CustomerID STRING,
+    Name STRING,
+    DateOfBirth DATE,
+    Gender STRING,
+    MaritalStatus STRING,
+    Email STRING,
+    PhoneNumber STRING,
+    Country STRING,
+    Region STRING,
+    State STRING,
+    City STRING,
+    Pincode STRING
+);
+
+
+
+DESC TABLE BANKING.CUSTOMER360_BRONZE.CUSTOMERS
+
+
+
+-- Create a pipe to load customer data with a specific pattern
+CREATE OR REPLACE PIPE "BANK_CUSTOMERS_PIPE"
+  AUTO_INGEST = TRUE
+  INTEGRATION = 'BANKING_SNOWPIPE'
+AS
+COPY INTO BANKING.CUSTOMER360_BRONZE.CUSTOMERS
+  (CustomerKey,
+   CustomerID,
+   Name,
+   DateOfBirth,
+   Gender,
+   MaritalStatus,
+   Email,
+   PhoneNumber,
+   Country,
+   Region,
+   State,
+   City,
+   Pincode)
+FROM @BANKING.PUBLIC.BANKING_STAGE_RAW
+  PATTERN = '.*customers.*'  -- Pattern to match files containing 'customer' in the filename
+FILE_FORMAT = (TYPE = 'CSV', FIELD_OPTIONALLY_ENCLOSED_BY = '"');
+
+
+SELECT * FROM TABLE(BANKING.INFORMATION_SCHEMA.COPY_HISTORY(TABLE_NAME=>'CUSTOMER360_BRONZE.CUSTOMERS',START_TIME=>DATEADD(MINUTES,-20,CURRENT_TIMESTAMP())))
+
+ls @BANKING.PUBLIC.BANKING_STAGE_RAW
+ls @BANKING.PIPES_TESTING.BANKING_STAGE_RAW
+
+create or replace pipe BANKING.PIPES_TESTING.customers_PIPE auto_ingest=true integration='BANKING_SNOWPIPE' as COPY INTO BANKING.CUSTOMER360_BRONZE.customers
+FROM @BANKING.PUBLIC.BANKING_STAGE_RAW
+pattern = '.*customers.*';
+
+ALTER PIPE BANKING.PIPES_TESTING.BANK_ACCOUNTS_PIPE REFRESH;
+ALTER PIPE BANKING.PIPES_TESTING.BANK_CUSTOMERS_PIPE REFRESH;
+ALTER PIPE BANKING.PIPES_TESTING.BANK_TRANSACTIONS_PIPE REFRESH;
+
+
+
+SELECT SYSTEM$PIPE_STATUS('BANK_ACCOUNTS_PIPE');
+
+
+
+
+
+CREATE OR REPLACE TABLE BANKING.CUSTOMER360_BRONZE.dq_error_table (
+    CustomerKey VARCHAR(16777216),
+    IssueDescription VARCHAR(16777216),
+    ValidationRule VARCHAR(16777216),
+    RecordDetails VARIANT
+);
+
+
+
+CREATE OR REPLACE PROCEDURE BANKING.CUSTOMER360_BRONZE.VALIDATE_AND_LOAD_TO_BRONZE()
+RETURNS VARCHAR
+LANGUAGE SQL
+AS
+'
+BEGIN
+   -- Validate PhoneNumber: remove non-numeric characters and check for exactly 10 digits
+   INSERT INTO BANKING.CUSTOMER360_BRONZE.DQ_ERROR_TABLE (CustomerKey, IssueDescription, ValidationRule, RecordDetails)
+   SELECT
+       CustomerKey,
+       ''PhoneNumber does not have exactly 10 digits'',
+       ''PhoneNumber Validation'',
+       OBJECT_CONSTRUCT(*)
+   FROM BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE
+   WHERE LENGTH(REGEXP_REPLACE(PhoneNumber, ''[^0-9]'', '''')) != 10;
+
+   -- Validate DateOfBirth: Check if the DateOfBirth is in correct format (MM/DD/YYYY)
+   INSERT INTO BANKING.CUSTOMER360_BRONZE.DQ_ERROR_TABLE (CustomerKey, IssueDescription, ValidationRule, RecordDetails)
+   SELECT
+       CustomerKey,
+       ''DateOfBirth is invalid or in incorrect format'',
+       ''DateOfBirth Validation'',
+       OBJECT_CONSTRUCT(*)
+   FROM BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE
+   WHERE TRY_TO_DATE(DateOfBirth) IS NULL;
+
+   -- Validate Name (checking for NULL)
+   INSERT INTO BANKING.CUSTOMER360_BRONZE.DQ_ERROR_TABLE (CustomerKey, IssueDescription, ValidationRule, RecordDetails)
+   SELECT
+       CustomerKey,
+       ''Name cannot be null'',
+       ''Name Validation'',
+       OBJECT_CONSTRUCT(*)
+   FROM BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE
+   WHERE Name IS NULL;
+
+   -- Validate CustomerID (checking for NULL)
+   INSERT INTO BANKING.CUSTOMER360_BRONZE.DQ_ERROR_TABLE (CustomerKey, IssueDescription, ValidationRule, RecordDetails)
+   SELECT
+       CustomerKey,
+       ''CustomerID cannot be null'',
+       ''CustomerID Validation'',
+       OBJECT_CONSTRUCT(*)
+   FROM BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE
+   WHERE CustomerID IS NULL;
+
+   -- Load valid records into Bronze Layer (avoiding duplicates using MERGE)
+   MERGE INTO BANKING.CUSTOMER360_BRONZE.CUSTOMERS AS b
+   USING (SELECT * FROM BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE
+          WHERE CustomerKey NOT IN (SELECT CustomerKey FROM BANKING.CUSTOMER360_BRONZE.DQ_ERROR_TABLE)) AS s
+   ON b.CustomerKey = s.CustomerKey
+   WHEN MATCHED THEN
+       UPDATE SET
+           b.CustomerID = s.CustomerID,
+           b.Name = s.Name,
+           b.DateOfBirth = s.DateOfBirth,
+           b.PhoneNumber = s.PhoneNumber,
+           b.Country = s.Country,
+           b.Region = s.Region,
+           b.State = s.State,
+           b.City = s.City,
+           b.Pincode = s.Pincode
+   WHEN NOT MATCHED THEN
+       INSERT (CustomerKey, CustomerID, Name, DateOfBirth, PhoneNumber, Country, Region, State, City, Pincode)
+       VALUES (s.CustomerKey, s.CustomerID, s.Name, s.DateOfBirth, s.PhoneNumber, s.Country, s.Region, s.State, s.City, s.Pincode);
+
+   -- Return success message
+   RETURN ''Data validation and loading to Bronze layer completed successfully.'';
+END;
+';
+
+
+CALL BANKING.CUSTOMER360_BRONZE.VALIDATE_AND_LOAD_TO_BRONZE();
+
+
+CREATE OR REPLACE STREAM BANKING.CUSTOMER360_BRONZE.BANKING_STAGE_RAW_CUSTOMER_STREAM
+  ON TABLE BANKING.PUBLIC.BANKING_STAGE_RAW
+
+
+CREATE OR REPLACE TABLE BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE (
+    CustomerKey VARCHAR(16777216),
+    CustomerID VARCHAR(16777216),
+    Name VARCHAR(16777216),
+    DateOfBirth DATE,
+    Gender VARCHAR(10),
+    MaritalStatus VARCHAR(20),
+    Email VARCHAR(255),
+    PhoneNumber VARCHAR(20),
+    Country VARCHAR(100),
+    Region VARCHAR(100),
+    State VARCHAR(100),
+    City VARCHAR(100),
+    Pincode VARCHAR(10)
+);
+
+
+CREATE OR REPLACE PIPE "BANK_CUSTOMERS_PIPE"
+  AUTO_INGEST = TRUE
+  INTEGRATION = 'BANKING_SNOWPIPE'
+AS
+COPY INTO BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE
+  (CustomerKey, CustomerID, Name, DateOfBirth, Gender, MaritalStatus, Email, PhoneNumber, Country, Region, State, City, Pincode)
+FROM (
+  SELECT 
+    $1 AS CustomerKey,
+    $2 AS CustomerID,
+    $3 AS Name,
+    TO_DATE($4, 'MM/DD/YYYY') AS DateOfBirth,   -- Added Date format conversion for DateOfBirth
+    $5 AS Gender,
+    $6 AS MaritalStatus,
+    $7 AS Email,
+    $8 AS PhoneNumber,
+    $9 AS Country,
+    $10 AS Region,
+    $11 AS State,
+    $12 AS City,
+    $13 AS Pincode
+  FROM @BANKING.PUBLIC.BANKING_STAGE_RAW
+ -- PATTERN = '(?i).*Customer.*'  -- Case-insensitive matching for 'Customer' in file name
+)
+FILE_FORMAT = (TYPE = 'CSV', FIELD_OPTIONALLY_ENCLOSED_BY = '"');
+
+ALTER PIPE BANK_CUSTOMERS_PIPE REFRESH
+LIST @BANKING.PUBLIC.BANKING_STAGE_RAW;
+
+
+SHOW PROCEDURES IN SCHEMA BANKING.CUSTOMER360_BRONZE;
+
+CALL BANKING.CUSTOMER360_BRONZE.VALIDATE_AND_LOAD_TO_BRONZE();
+
+
+-- STREAM FOR PROCEDURES DATA WHICH IS DATA QUALITY 
+CREATE OR REPLACE STREAM staging_table_stream
+  ON TABLE BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE
+ 
+--TASK TO AUTOMATE THE PROCEDURE FOR DATA QUALITY 
+ CREATE OR REPLACE TASK validate_and_load_task
+  WAREHOUSE = COMPUTE_WH  -- Replace with your actual Snowflake warehouse
+  WHEN
+    SYSTEM$STREAM_HAS_DATA('staging_table_stream')  -- Check if the stream has any changes (insert/update)
+AS
+  CALL BANKING.CUSTOMER360_BRONZE.VALIDATE_AND_LOAD_TO_BRONZE();  -- Correct procedure location
+
+
+ALTER TASK validate_and_load_task RESUME;
+
+SHOW TASKS LIKE 'validate_and_load_task';
+
+
+TRUNCATE TABLE BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE;
+TRUNCATE TABLE BANKING.CUSTOMER360_BRONZE.CUSTOMERS;
+TRUNCATE TABLE BANKING.CUSTOMER360_BRONZE.DQ_ERROR_TABLE;
+
+SELECT * FROM  BANKING.CUSTOMER360_BRONZE.DQ_ERROR_TABLE;
+SELECT * FROM BANKING.CUSTOMER360_BRONZE.CUSTOMERS  ;
+SELECT * FROM BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE
+
+-- Test the first table and validate column names
+DESC TABLE  BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE ;
+
+-- Test the second table
+SELECT * FROM  BANKING.CUSTOMER360_BRONZE.DQ_ERROR_TABLE;
+
+-- Test the third table
+SELECT * 
+FROM BANKING.CUSTOMER360_BRONZE.CUSTOMERS LIMIT ;
+
+
+SELECT 
+    CustomerKey,
+    'Name cannot be null' AS IssueDescription,
+    'Name Validation' AS ValidationRule,
+    OBJECT_CONSTRUCT(*)
+FROM BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE
+WHERE Name IS NULL;
+
+
+SELECT * FROM BANKING.PUBLIC.BANKING_STAGE_RAW_CUSTOMER_TABLE
+
