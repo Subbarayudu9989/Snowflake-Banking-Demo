@@ -1,0 +1,210 @@
+name: BankingData
+description: A semantic model for banking data in the CUSTOMER360DEMO database
+
+tables:
+  - name: BankAccount
+    description: Account information from the CUSTOMER360DEMO.PUBLIC.ACCOUNT table
+    base_table:
+      database: CUSTOMER360DEMO
+      schema: PUBLIC
+      table: account
+    dimensions:
+      - name: AccountKey
+        synonyms: ["Account Key"]
+        description: Unique identifier for the account
+        expr: account_key
+        data_type: STRING
+      - name: CustomerID
+        synonyms: ["Customer ID"]
+        description: Unique identifier for the customer
+        expr: customer_id
+        data_type: STRING
+      - name: ProductID
+        synonyms: ["Product ID"]
+        description: Identifier for the product associated with the account
+        expr: product_id
+        data_type: STRING
+      - name: AccountType
+        synonyms: ["Type of Account"]
+        description: Type of the account
+        expr: account_type
+        data_type: STRING
+      - name: AccountNumber
+        synonyms: ["Account Number"]
+        description: Unique account number
+        expr: account_number
+        data_type: STRING
+      - name: CustomerName
+        synonyms: ["Name of the Customer"]
+        description: Name of the customer holding the account
+        expr: customer_name
+        data_type: STRING
+      - name: AccountStatus
+        synonyms: ["Status of the Account"]
+        description: Current status of the account
+        expr: account_status
+        data_type: STRING
+      - name: AccountOpenDate
+        synonyms: ["Open Date"]
+        description: Date when the account was opened
+        expr: account_open_date
+        data_type: DATE
+      - name: AccountCloseDate
+        synonyms: ["Close Date"]
+        description: Date when the account was closed
+        expr: account_close_date
+        data_type: DATE
+    measures:
+      - name: AvgMonthlyBalance
+        synonyms: ["Average Monthly Balance"]
+        description: Average monthly balance in the account
+        expr: avg_monthly_balance
+        data_type: DECIMAL(18, 2)
+      - name: CurrentBalance
+        synonyms: ["Current Balance"]
+        description: Current balance of the account
+        expr: current_balance
+        data_type: DECIMAL(18, 2)
+      - name: PrincipalAmount
+        synonyms: ["Principal Amount"]
+        description: Principal loan amount associated with the account
+        expr: principal_amount
+        data_type: DECIMAL(18, 2)
+      - name: MonthlyPayment
+        synonyms: ["Monthly Payment"]
+        description: Monthly payment due for the account
+        expr: monthly_payment
+        data_type: DECIMAL(18, 2)
+      - name: CardLimit
+        synonyms: ["Card Limit"]
+        description: Credit card limit for the account
+        expr: card_limit
+        data_type: DECIMAL(18, 2)
+      - name: Tenure
+        synonyms: ["Tenure of the Account"]
+        description: Duration for which the account is active
+        expr: tenure
+        data_type: STRING
+      - name: AcType
+        synonyms: ["Account Type"]
+        description: Type of the account (e.g., checking, savings)
+        expr: ac_type
+        data_type: STRING
+
+  - name: Customer
+    description: Customer information from the CUSTOMER360DEMO.PUBLIC.CUSTOMER table
+    base_table:
+      database: CUSTOMER360DEMO
+      schema: PUBLIC
+      table: customer
+    dimensions:
+      - name: CustomerKey
+        synonyms: ["Customer Key"]
+        description: Unique identifier for the customer
+        expr: customerkey
+        data_type: STRING
+      - name: CustomerID
+        synonyms: ["Customer ID"]
+        description: Unique customer ID
+        expr: customerid
+        data_type: STRING
+      - name: Name
+        synonyms: ["Customer Name"]
+        description: Name of the customer
+        expr: name
+        data_type: STRING
+      - name: DateOfBirth
+        synonyms: ["DOB"]
+        description: Date of birth of the customer
+        expr: dateofbirth
+        data_type: DATE
+      - name: Gender
+        synonyms: ["Gender"]
+        description: Gender of the customer
+        expr: gender
+        data_type: STRING
+      - name: MaritalStatus
+        synonyms: ["Marital Status"]
+        description: Marital status of the customer
+        expr: maritalstatus
+        data_type: STRING
+      - name: Email
+        synonyms: ["Email Address"]
+        description: Email address of the customer
+        expr: email
+        data_type: STRING
+      - name: PhoneNumber
+        synonyms: ["Phone Number"]
+        description: Contact number of the customer
+        expr: phonenumber
+        data_type: STRING
+      - name: Country
+        synonyms: ["Country"]
+        description: Country of the customer
+        expr: country
+        data_type: STRING
+      - name: Region
+        synonyms: ["Region"]
+        description: Region of the customer
+        expr: region
+        data_type: STRING
+      - name: State
+        synonyms: ["State"]
+        description: State of the customer
+        expr: state
+        data_type: STRING
+      - name: City
+        synonyms: ["City"]
+        description: City of the customer
+        expr: city
+        data_type: STRING
+      - name: Pincode
+        synonyms: ["Pincode"]
+        description: Postal code of the customer's location
+        expr: pincode
+        data_type: STRING
+
+  - name: Transactions
+    description: Transaction details from the CUSTOMER360DEMO.PUBLIC.TRANSACTIONS table
+    base_table:
+      database: CUSTOMER360DEMO
+      schema: PUBLIC
+      table: transactions
+    dimensions:
+      - name: TransactionID
+        synonyms: ["Transaction ID"]
+        description: Unique identifier for the transaction
+        expr: transaction_id
+        data_type: STRING
+      - name: ProductID
+        synonyms: ["Product ID"]
+        description: Product associated with the transaction
+        expr: product_id
+        data_type: STRING
+      - name: AccountKey
+        synonyms: ["Account Key"]
+        description: The account associated with the transaction
+        expr: account_key
+        data_type: STRING
+      - name: PaymentType
+        synonyms: ["Type of Payment"]
+        description: Payment method for the transaction
+        expr: payment_type
+        data_type: STRING
+    time_dimensions:
+      - name: TransactionDate
+        synonyms: ["Date of Transaction"]
+        description: Date when the transaction occurred
+        expr: transaction_date
+        data_type: DATE
+    measures:
+      - name: TransactionAmount
+        synonyms: ["Amount of Transaction"]
+        description: The monetary value involved in the transaction
+        expr: transaction_amt
+        data_type: DECIMAL(18, 2)
+      - name: Balance
+        synonyms: ["Balance"]
+        description: Remaining balance after the transaction
+        expr: balance
+        data_type: DECIMAL(18, 2)
